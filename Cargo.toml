@@ -1,7 +1,13 @@
 [package]
 name = "paillier-rs"
+authors = ["MathxH Chen <brainfvck@foxmail.com>"]
+description = "Paillier Cryptosystem Implementation"
 version = "0.1.0"
 edition = "2021"
+keywords = ["paillier-crypto", "homomorphic encryption", "asymmetric algorithm", "public key cryptography"]
+license = "MIT"
+readme = "README.md"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
