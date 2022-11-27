@@ -16,4 +16,5 @@ num-bigint = {version = "0.2.6", features = ["rand"]}
 num-integer = "0.1.44"
 num-primes = "0.1.2"
 num-traits = "0.2.14"
+num-bigint-dig = "0.8.2"
 rand = "0.5.6"
