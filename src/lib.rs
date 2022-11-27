@@ -58,6 +58,9 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
     ));
 }
 
+
+//////////////////// Enrypt & Decrypt /////////////////////////////////////
+
 impl PubKey {
     /// encrypt message to ciphertext
     pub fn encrypt_message(&self, msg: &str) -> Option<BigInt> {
@@ -103,6 +106,12 @@ impl PrivKey {
            Some(m)
         }
     }
+}
+
+//////////////////////// Homomorphic properties ////////////////////////////////
+
+impl PubKey {
+    
 }
 
 // L(x) = (x - 1) / n
