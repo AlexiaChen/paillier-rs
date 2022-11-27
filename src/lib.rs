@@ -12,7 +12,7 @@ use std::ops::Sub;
 /// PubKey -- Publick Key
 #[derive(Debug, Clone, Default)]
 pub struct PubKey {
-    pub g: BigInt, // generator
+    pub g: BigInt, // g = n + 1
     pub n: BigInt, // n = p*q
     pub nn: BigInt // n^2
 }
@@ -33,20 +33,17 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
     let nn = n.clone() * n.clone();
 
     // Select random integer g where g ∈ Z_(n^2)*
+    // but If using p,q of equivalent length, 
+    // a simpler variant of the above key generation steps would be to set
+    // g = n + 1, lambda = phi(n), mu = phi(n)^-1 mod n,  phi(n) = (p - 1)*(q - 1)
     // https://crypto.stackexchange.com/questions/8276/what-does-mathbbz-n2-mean
-    let mut rng = rand::thread_rng();
-    let g = rng.gen_biguint_below(&nn.to_biguint().unwrap())
-        .to_bigint().unwrap();
+    let g = n.clone() + BigInt::one();
 
-    // lambda = lcm(p - 1, q - 1)
-    let p1 = p.sub(BigInt::one());
-    let q1 = q.sub(BigInt::one());
-    let lambda = p1.lcm(&q1);
+    // lambda = phi(n)
+    let lambda = phi(&p, &q);
     
-    // L(x) = (x - 1) / n
-    // mu = （L(g^lambda mod n^2)）^-1 mod n
-    let l = l(&g_lambda(&g, &lambda, &nn), &n);
-    let mu = mod_inverse(&l, &n).unwrap();
+    // mu = phi(n)^-1 = lambda^-1
+    let mu = mod_inverse(&lambda, &n).unwrap();
 
     let pk = PubKey {
         g,
@@ -62,6 +59,12 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
 fn l(x: &BigInt, n: &BigInt) -> BigInt {
     let x1 = x - BigInt::one();
     x1 / n
+}
+
+fn phi(p: &BigInt, q: &BigInt) -> BigInt {
+    let p1 = p.sub(BigInt::one());
+    let q1 = q.sub(BigInt::one());
+    p1 * q1
 }
 
 fn g_lambda(g:&BigInt, lambda: &BigInt, nn: &BigInt) -> BigInt {
