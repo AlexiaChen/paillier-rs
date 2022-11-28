@@ -154,7 +154,7 @@ mod tests {
             let cipher_text = keypair
                 .0
                 .pk
-                .encrypt(&BigInt::from_usize(MSG as usize).unwrap())
+                .encrypt(&BigInt::from_usize(MSG).unwrap())
                 .unwrap();
             let plain_text = keypair.0.decrypt(&cipher_text).unwrap();
             assert_eq!(MSG, plain_text.to_usize().unwrap());
