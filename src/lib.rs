@@ -1,19 +1,15 @@
-
-
 use num_bigint::{BigInt, BigUint, RandBigInt, ToBigInt};
 use num_primes::Generator;
 use num_traits::identities::{One, Zero};
-use std::{clone::Clone};
+use std::clone::Clone;
 use std::ops::Sub;
-
-
 
 /// PubKey -- Publick Key
 #[derive(Debug, Clone, Default)]
 pub struct PubKey {
-    pub g: BigInt, // g = n + 1
-    pub n: BigInt, // n = p*q
-    pub nn: BigInt // n^2
+    pub g: BigInt,  // g = n + 1
+    pub n: BigInt,  // n = p*q
+    pub nn: BigInt, // n^2
 }
 
 /// PrivKey -- Private Key
@@ -32,10 +28,10 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
     let nn = n.clone() * n.clone();
 
     // Select random integer g where g ∈ Z_(n^2)*
-    // but If using p,q of equivalent length, 
+    // but If using p,q of equivalent length,
     // a simpler variant of the above key generation steps would be to set
     // g = n + 1, lambda = phi(n), mu = phi(n)^-1 mod n,  phi(n) = (p - 1)*(q - 1)
-    // The simpler variant is recommended for implementational purposes, 
+    // The simpler variant is recommended for implementational purposes,
     // because in the general form the calculation time of mu
     // can be very high with sufficiently large primes p,q.
     // https://crypto.stackexchange.com/questions/8276/what-does-mathbbz-n2-mean
@@ -43,21 +39,14 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
 
     // lambda = phi(n)
     let lambda = phi(&p, &q);
-    
-    // mu = phi(n)^-1 mod n = lambda^-1 mod n = inverse lambda mod n 
+
+    // mu = phi(n)^-1 mod n = lambda^-1 mod n = inverse lambda mod n
     let mu = mod_inverse(&lambda, &n).unwrap();
 
-    let pk = PubKey {
-        g,
-        n,
-        nn
-    };
-    
-    return Some(KeyPair(
-        PrivKey { lambda, mu, pk }
-    ));
-}
+    let pk = PubKey { g, n, nn };
 
+    return Some(KeyPair(PrivKey { lambda, mu, pk }));
+}
 
 //////////////////// Enrypt & Decrypt /////////////////////////////////////
 
@@ -74,9 +63,8 @@ impl PubKey {
         if m >= &BigInt::zero() && m < &self.n {
             // select random r where 0 < r < n
             let mut rng = rand::thread_rng();
-            let r =  rng.gen_bigint_range(&BigInt::one(), 
-                &self.n);
-            
+            let r = rng.gen_bigint_range(&BigInt::one(), &self.n);
+
             // compute ciphertext c = g^m * r^n (mod n^2)
             let g_m = self.g.modpow(m, &self.nn);
             let r_n = r.modpow(&self.n, &self.nn);
@@ -99,20 +87,18 @@ impl PrivKey {
         if ciphertext == &BigInt::zero() {
             None
         } else {
-           // Compute the plaintext message as m = L(c^lambda mod n^2) * mu mod n
-           let c_lambda = ciphertext.modpow(&self.lambda, &self.pk.nn);
-           let l_ = l(&c_lambda, &self.pk.n);
-           let m = (l_ * self.mu.clone()) % self.pk.n.clone();
-           Some(m)
+            // Compute the plaintext message as m = L(c^lambda mod n^2) * mu mod n
+            let c_lambda = ciphertext.modpow(&self.lambda, &self.pk.nn);
+            let l_ = l(&c_lambda, &self.pk.n);
+            let m = (l_ * self.mu.clone()) % self.pk.n.clone();
+            Some(m)
         }
     }
 }
 
 //////////////////////// Homomorphic properties ////////////////////////////////
 
-impl PubKey {
-    
-}
+impl PubKey {}
 
 // L(x) = (x - 1) / n
 fn l(x: &BigInt, n: &BigInt) -> BigInt {
@@ -140,23 +126,45 @@ fn mod_inverse(a: &BigInt, modular: &BigInt) -> Option<BigInt> {
     if g != BigInt::one() {
         None
     } else {
-        let result = (x.clone() % modular.clone() + modular.clone())
-            % modular.clone();
+        let result = (x.clone() % modular.clone() + modular.clone()) % modular.clone();
         Some(result)
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use num_traits::{FromPrimitive, ToPrimitive};
+
     use super::*;
 
     #[test]
-    fn it_works() {
-      const MSG: &str = "secret message";
-      let keypair = make_key_pair(1024).unwrap();
-      let cipher_text = keypair.0.pk.encrypt_message(MSG).unwrap();
-      let plain_text = keypair.0.decrypt_message(&cipher_text).unwrap();
-      assert_eq!(MSG, plain_text);
+    fn test_text_encrypt_decrypt() {
+        const MSG: &str = "secret message";
+        let keypair = make_key_pair(1024).unwrap();
+        let cipher_text = keypair.0.pk.encrypt_message(MSG).unwrap();
+        let plain_text = keypair.0.decrypt_message(&cipher_text).unwrap();
+        assert_eq!(MSG, plain_text);
+    }
+
+    #[test]
+    fn test_int_encrypt_decrypt() {
+        {
+            const MSG: usize = 2022;
+            let keypair = make_key_pair(1024).unwrap();
+            let cipher_text = keypair
+                .0
+                .pk
+                .encrypt(&BigInt::from_usize(MSG as usize).unwrap())
+                .unwrap();
+            let plain_text = keypair.0.decrypt(&cipher_text).unwrap();
+            assert_eq!(MSG, plain_text.to_usize().unwrap());
+        }
+
+        {
+            const MSG: i32 = -1;
+            let keypair = make_key_pair(1024).unwrap();
+            let cipher_text = keypair.0.pk.encrypt(&BigInt::from_i32(MSG).unwrap());
+            assert_eq!(cipher_text.is_none(), true);
+        }
     }
 }
