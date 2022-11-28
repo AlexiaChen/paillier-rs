@@ -19,8 +19,10 @@ pub struct PrivKey {
     pub pk: PubKey,
 }
 
+/// KeyPair -- includes public key and privatekey
 pub struct KeyPair(PrivKey);
 
+/// make_key_pair -- Generate pk and sk
 pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
     let p = Generator::new_prime(bitlen).to_bigint().unwrap();
     let q = Generator::new_prime(bitlen).to_bigint().unwrap();
@@ -77,11 +79,13 @@ impl PubKey {
 }
 
 impl PrivKey {
+    /// decrypt ciphertext to plain text
     pub fn decrypt_message(&self, ciphertext: &BigInt) -> Option<String> {
         let plain_text_int = self.decrypt(ciphertext).unwrap();
         Some(String::from_utf8(plain_text_int.to_biguint().unwrap().to_bytes_be()).unwrap())
     }
 
+    /// decrypt cipertext to integer message
     pub fn decrypt(&self, ciphertext: &BigInt) -> Option<BigInt> {
         // Let c be the ciphertext to decrypt, where c ∈ Z_(n^2)*    0 < c <= n^2 - 1
         if ciphertext == &BigInt::zero() {
