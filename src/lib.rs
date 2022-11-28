@@ -141,6 +141,42 @@ impl PubKey {
        // D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n
        Some(ciphertext1.mul(ciphertext2) % &self.nn)
     }
+
+    /// D(sub(E(m1), E(m2))) = E(m1) - E(m2) mod n if m1 > m2
+    /// returns sub result of two encrypted data
+    pub fn sub(&self, ciphertext1: &BigInt, ciphertext2: &BigInt) -> Option<BigInt> {
+        if !is_cipher_valid(ciphertext1, &self.nn) || !is_cipher_valid(ciphertext2, &self.nn) {
+             return None;
+        }
+        let neg_m2 = mod_inverse(ciphertext2, &self.nn).unwrap();
+        Some(ciphertext1.mul(neg_m2) % &self.nn)
+     }
+
+    /// D(E(m1)^m2 mod n^2) = m1*m2 mod n
+    /// => D(E(m2)^m1 mod n^2) = m1*m2 mod n = m2*m1 mod n
+    /// => D(E(m)^k mod n^2) = k*m mod n
+    /// Dec(mult_plain_text(E(m1), m2)) = m1 * m2 mod n.
+    /// returns result of multiplication of two ciphertexts
+    pub fn mult_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
+        if !is_cipher_valid(ciphertext, &self.nn) {
+            return None;
+        }
+        let k = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
+        Some(ciphertext.modpow(&k, &self.nn))
+    }
+
+    /// D(E(m)^-k mod n^2) = D(E(m)^(inverse k) mod n^2) = m / k mod n
+    /// Dec(div_plain_text(E(m1), m2)) = m1 / m2 mod n.
+    /// returns result division  of two ciphertext 
+    pub fn div_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
+        if !is_cipher_valid(ciphertext, &self.nn) {
+            return None;
+        }
+        let k = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
+        let inverse_k = mod_inverse(&k, &self.nn).unwrap();
+        Some(ciphertext.modpow(&inverse_k, &self.nn))
+    }
+
 }
 
 // L(x) = (x - 1) / n
