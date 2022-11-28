@@ -7,7 +7,7 @@ edition = "2021"
 keywords = ["paillier-crypto", "homomorphic encryption", "asymmetric algorithm", "public key cryptography"]
 license = "MIT"
 readme = "README.md"
-
+repository = "https://github.com/AlexiaChen/paillier-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

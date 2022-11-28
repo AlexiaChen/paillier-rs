@@ -1,3 +1,15 @@
+// Copyright 2022 MathxH Chen.
+//
+// Code is licensed under MIT License.
+
+//! # Paillier
+//!
+//! Just an implementation of [Paillier Cryptosystem](https://en.wikipedia.org/wiki/Paillier_cryptosystem) written in Rust.
+//!
+//! ## Documents
+//!
+//! See [Github README](https://github.com/AlexiaChen/paillier-rs/blob/master/README.md)
+
 use num_bigint::{BigInt, BigUint, RandBigInt, ToBigInt};
 use num_primes::Generator;
 use num_traits::identities::{One, Zero};
