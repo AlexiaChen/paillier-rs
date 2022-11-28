@@ -14,7 +14,7 @@ use num_bigint::{BigInt, BigUint, RandBigInt, ToBigInt};
 use num_primes::Generator;
 use num_traits::identities::{One, Zero};
 use std::clone::Clone;
-use std::ops::Sub;
+use std::ops::{Sub, Mul};
 
 /// PubKey -- Publick Key
 #[derive(Debug, Clone, Default)]
@@ -82,7 +82,7 @@ impl PubKey {
             // compute ciphertext c = g^m * r^n (mod n^2)
             let g_m = self.g.modpow(m, &self.nn);
             let r_n = r.modpow(&self.n, &self.nn);
-            let c = (g_m * r_n) % self.nn.clone();
+            let c = (g_m * r_n) % &self.nn;
             Some(c)
         } else {
             None
@@ -104,7 +104,7 @@ impl PrivKey {
             // Compute the plaintext message as m = L(c^lambda mod n^2) * mu mod n
             let c_lambda = ciphertext.modpow(&self.lambda, &self.pk.nn);
             let l_ = l(&c_lambda, &self.pk.n);
-            let m = (l_ * self.mu.clone()) % self.pk.n.clone();
+            let m = (l_ * &self.mu) % &self.pk.n;
             Some(m)
         } else {
            None
@@ -119,9 +119,17 @@ impl PubKey {
     /// => D(E(m1) * g^m2 mod n^2) = m1 + m2 mod n     That is efficient, Simplified steps
     /// D(add_plain_text(E(m1), m2)) = m1 + m2 mod n
     /// returns added msg encrypted result
-    pub fn add_plain_text(ciphertext: &BigInt, msg: &str) -> () {
+    pub fn add_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
+        if ciphertext > &BigInt::zero() && ciphertext <= &(&self.nn - BigInt::one()) {
+            let msg_int = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
+            // ciphertext * g^m2 mod N^2
+            // => ciphertext(E(m1)) * ciphertext2(E(m2)) mod N^2
+            let ciphertext2 = self.g.modpow(&msg_int, &self.nn);
+            Some(ciphertext.mul(ciphertext2) % &self.nn)
+        } else {
+            None
+        }
         
-        ()
     }
 }
 
