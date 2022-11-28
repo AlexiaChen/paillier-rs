@@ -26,8 +26,8 @@ pub struct PrivKey {
 pub struct KeyPair(PrivKey);
 
 pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
-    let p = Generator::safe_prime(bitlen).to_bigint().unwrap();
-    let q = Generator::safe_prime(bitlen).to_bigint().unwrap();
+    let p = Generator::new_prime(bitlen).to_bigint().unwrap();
+    let q = Generator::new_prime(bitlen).to_bigint().unwrap();
     let n = p.clone() * q.clone();
     let nn = n.clone() * n.clone();
 
@@ -153,6 +153,10 @@ mod tests {
 
     #[test]
     fn it_works() {
-      
+      const MSG: &str = "secret message";
+      let keypair = make_key_pair(1024).unwrap();
+      let cipher_text = keypair.0.pk.encrypt_message(MSG).unwrap();
+      let plain_text = keypair.0.decrypt_message(&cipher_text).unwrap();
+      assert_eq!(MSG, plain_text);
     }
 }
