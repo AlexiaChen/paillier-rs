@@ -99,8 +99,7 @@ impl PrivKey {
 
     /// decrypt cipertext to integer message
     pub fn decrypt(&self, ciphertext: &BigInt) -> Option<BigInt> {
-        // Let c be the ciphertext to decrypt, where c ∈ Z_(n^2)*    0 < c <= n^2 - 1
-        if ciphertext > &BigInt::zero() && ciphertext <= &(&self.pk.nn - BigInt::one()) {
+        if is_cipher_valid(ciphertext, &self.pk.nn) {
             // Compute the plaintext message as m = L(c^lambda mod n^2) * mu mod n
             let c_lambda = ciphertext.modpow(&self.lambda, &self.pk.nn);
             let l_ = l(&c_lambda, &self.pk.n);
@@ -120,7 +119,7 @@ impl PubKey {
     /// D(add_plain_text(E(m1), m2)) = m1 + m2 mod n
     /// returns added msg encrypted result
     pub fn add_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
-        if ciphertext > &BigInt::zero() && ciphertext <= &(&self.nn - BigInt::one()) {
+        if is_cipher_valid(ciphertext, &self.nn) {
             let msg_int = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
             // ciphertext * g^m2 mod N^2
             // => ciphertext(E(m1)) * ciphertext2(E(m2)) mod N^2
@@ -130,6 +129,17 @@ impl PubKey {
             None
         }
         
+    }
+
+    /// D(add(E(m1), E(m2))) = m1 + m2 mod n
+    /// returns added sum of two encrypted data
+    pub fn add(&self, ciphertext1: &BigInt, ciphertext2: &BigInt) -> Option<BigInt> {
+       if !is_cipher_valid(ciphertext1, &self.nn) || !is_cipher_valid(ciphertext2, &self.nn) {
+            return None;
+       }
+
+       // D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n
+       Some(ciphertext1.mul(ciphertext2) % &self.nn)
     }
 }
 
@@ -161,6 +171,15 @@ fn mod_inverse(a: &BigInt, modular: &BigInt) -> Option<BigInt> {
     } else {
         let result = (&x % modular + modular) % modular;
         Some(result)
+    }
+}
+
+// Let c be the ciphertext to decrypt, where c ∈ Z_(n^2)*    0 < c <= n^2 - 1
+fn is_cipher_valid(c: &BigInt, nn: &BigInt) -> bool {
+    if c > &BigInt::zero() && c <= &(nn - BigInt::one()) {
+        true
+    } else {
+        false
     }
 }
 
