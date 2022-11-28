@@ -38,8 +38,8 @@ pub struct KeyPair(PrivKey);
 pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
     let p = Generator::new_prime(bitlen).to_bigint().unwrap();
     let q = Generator::new_prime(bitlen).to_bigint().unwrap();
-    let n = p.clone() * q.clone();
-    let nn = n.clone() * n.clone();
+    let n = &p * &q;
+    let nn = &n * &n;
 
     // Select random integer g where g ∈ Z_(n^2)*
     // but If using p,q of equivalent length,
@@ -49,7 +49,7 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
     // because in the general form the calculation time of mu
     // can be very high with sufficiently large primes p,q.
     // https://crypto.stackexchange.com/questions/8276/what-does-mathbbz-n2-mean
-    let g = n.clone() + BigInt::one();
+    let g = &n + BigInt::one();
 
     // lambda = phi(n)
     let lambda = phi(&p, &q);
@@ -137,21 +137,21 @@ fn phi(p: &BigInt, q: &BigInt) -> BigInt {
     p1 * q1
 }
 
-fn extend_gcd(a: BigInt, b: BigInt) -> (BigInt, BigInt, BigInt) {
-    if a == BigInt::zero() {
-        (b, BigInt::zero(), BigInt::one())
+fn extend_gcd(a: &BigInt, b: &BigInt) -> (BigInt, BigInt, BigInt) {
+    if a == &BigInt::zero() {
+        (b.clone(), BigInt::zero(), BigInt::one())
     } else {
-        let (g, x, y) = extend_gcd(b.clone() % a.clone(), a.clone());
-        (g, y - (b / a) * x.clone(), x)
+        let (g, x, y) = extend_gcd(&(b % a), a);
+        (g, y - (b / a) * &x, x)
     }
 }
 
 fn mod_inverse(a: &BigInt, modular: &BigInt) -> Option<BigInt> {
-    let (g, x, _) = extend_gcd(a.clone(), modular.clone());
+    let (g, x, _) = extend_gcd(a, modular);
     if g != BigInt::one() {
         None
     } else {
-        let result = (x % modular.clone() + modular.clone()) % modular.clone();
+        let result = (&x % modular + modular) % modular;
         Some(result)
     }
 }
