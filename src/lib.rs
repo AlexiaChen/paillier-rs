@@ -59,7 +59,7 @@ pub fn make_key_pair(bitlen: usize) -> Option<KeyPair> {
 
     let pk = PubKey { g, n, nn };
 
-    return Some(KeyPair(PrivKey { lambda, mu, pk }));
+    Some(KeyPair(PrivKey { lambda, mu, pk }))
 }
 
 //////////////////// Enrypt & Decrypt /////////////////////////////////////
@@ -130,10 +130,10 @@ fn phi(p: &BigInt, q: &BigInt) -> BigInt {
 
 fn extend_gcd(a: BigInt, b: BigInt) -> (BigInt, BigInt, BigInt) {
     if a == BigInt::zero() {
-        (b.clone(), BigInt::zero(), BigInt::one())
+        (b, BigInt::zero(), BigInt::one())
     } else {
         let (g, x, y) = extend_gcd(b.clone() % a.clone(), a.clone());
-        (g, y - (b.clone() / a.clone()) * x.clone(), x.clone())
+        (g, y - (b / a) * x.clone(), x)
     }
 }
 
@@ -142,7 +142,7 @@ fn mod_inverse(a: &BigInt, modular: &BigInt) -> Option<BigInt> {
     if g != BigInt::one() {
         None
     } else {
-        let result = (x.clone() % modular.clone() + modular.clone()) % modular.clone();
+        let result = (x % modular.clone() + modular.clone()) % modular.clone();
         Some(result)
     }
 }
