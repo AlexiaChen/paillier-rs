@@ -100,21 +100,30 @@ impl PrivKey {
     /// decrypt cipertext to integer message
     pub fn decrypt(&self, ciphertext: &BigInt) -> Option<BigInt> {
         // Let c be the ciphertext to decrypt, where c ∈ Z_(n^2)*    0 < c <= n^2 - 1
-        if ciphertext == &BigInt::zero() {
-            None
-        } else {
+        if ciphertext > &BigInt::zero() && ciphertext <= &(&self.pk.nn - BigInt::one()) {
             // Compute the plaintext message as m = L(c^lambda mod n^2) * mu mod n
             let c_lambda = ciphertext.modpow(&self.lambda, &self.pk.nn);
             let l_ = l(&c_lambda, &self.pk.n);
             let m = (l_ * self.mu.clone()) % self.pk.n.clone();
             Some(m)
+        } else {
+           None
         }
     }
 }
 
 //////////////////////// Homomorphic properties ////////////////////////////////
 
-impl PubKey {}
+impl PubKey {
+    /// D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n    this formula not efficient, cause operation E has more OP steps
+    /// => D(E(m1) * g^m2 mod n^2) = m1 + m2 mod n     That is efficient, Simplified steps
+    /// D(add_plain_text(E(m1), m2)) = m1 + m2 mod n
+    /// returns added msg encrypted result
+    pub fn add_plain_text(ciphertext: &BigInt, msg: &str) -> () {
+        
+        ()
+    }
+}
 
 // L(x) = (x - 1) / n
 fn l(x: &BigInt, n: &BigInt) -> BigInt {
