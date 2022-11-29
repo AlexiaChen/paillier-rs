@@ -14,7 +14,7 @@ use num_bigint::{BigInt, BigUint, RandBigInt, ToBigInt};
 use num_primes::Generator;
 use num_traits::identities::{One, Zero};
 use std::clone::Clone;
-use std::ops::{Sub, Mul};
+use std::ops::{Mul, Sub};
 
 /// PubKey -- Publick Key
 #[derive(Debug, Clone, Default)]
@@ -108,7 +108,7 @@ impl PrivKey {
             let m = (l_ * &self.mu) % &self.pk.n;
             Some(m)
         } else {
-           None
+            None
         }
     }
 }
@@ -116,7 +116,6 @@ impl PrivKey {
 //////////////////////// Homomorphic properties ////////////////////////////////
 
 impl PubKey {
-   
     /// D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n    this formula not efficient, cause operation E has more OP steps
     /// => D(E(m1) * g^m2 mod n^2) = m1 + m2 mod n     That is efficient, Simplified steps
     /// D(add_plain_text(E(m1), m2)) = m1 + m2 mod n
@@ -131,29 +130,28 @@ impl PubKey {
         } else {
             None
         }
-        
     }
 
     /// D(add(E(m1), E(m2))) = m1 + m2 mod n
     /// returns added sum of two encrypted data
     pub fn add(&self, ciphertext1: &BigInt, ciphertext2: &BigInt) -> Option<BigInt> {
-       if !is_cipher_valid(ciphertext1, &self.nn) || !is_cipher_valid(ciphertext2, &self.nn) {
+        if !is_cipher_valid(ciphertext1, &self.nn) || !is_cipher_valid(ciphertext2, &self.nn) {
             return None;
-       }
+        }
 
-       // D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n
-       Some(ciphertext1.mul(ciphertext2) % &self.nn)
+        // D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n
+        Some(ciphertext1.mul(ciphertext2) % &self.nn)
     }
 
     /// D(sub(E(m1), E(m2))) = E(m1) - E(m2) mod n if m1 > m2
     /// returns sub result of two encrypted data
     pub fn sub(&self, ciphertext1: &BigInt, ciphertext2: &BigInt) -> Option<BigInt> {
         if !is_cipher_valid(ciphertext1, &self.nn) || !is_cipher_valid(ciphertext2, &self.nn) {
-             return None;
+            return None;
         }
         let neg_m2 = mod_inverse(ciphertext2, &self.nn).unwrap();
         Some(ciphertext1.mul(neg_m2) % &self.nn)
-     }
+    }
 
     /// D(E(m1)^m2 mod n^2) = m1*m2 mod n
     /// => D(E(m2)^m1 mod n^2) = m1*m2 mod n = m2*m1 mod n
@@ -171,7 +169,7 @@ impl PubKey {
 
     /// D(E(m)^-k mod n^2) = D(E(m)^(inverse k) mod n^2) = m / k mod n
     /// Dec(div_plain_text(E(m1), m2)) = m1 / m2 mod n.
-    /// returns result division  of two ciphertext 
+    /// returns result division  of two ciphertext
     pub fn div_plain_text(&self, ciphertext: &BigInt, plain_k: &BigInt) -> Option<BigInt> {
         if !is_cipher_valid(ciphertext, &self.nn) {
             return None;
@@ -179,8 +177,6 @@ impl PubKey {
         let inverse_k = mod_inverse(&plain_k, &self.nn).unwrap();
         self.mult_plain_text(ciphertext, &inverse_k)
     }
-
-
 }
 
 // L(x) = (x - 1) / n
@@ -267,10 +263,10 @@ mod tests {
         // D(E(50) + E(50)) = 6 + 9
         let tests = [(6, 9), (50, 50)];
         for test in tests {
-            let m1= BigInt::from_i32(test.0).unwrap();
+            let m1 = BigInt::from_i32(test.0).unwrap();
             let m2 = BigInt::from_i32(test.1).unwrap();
             let sum = &m1 + &m2;
-            
+
             let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
             let encrypted_sum = keypair.0.pk.add_plain_text(&encrypted_m1, &m2).unwrap();
 
@@ -285,10 +281,10 @@ mod tests {
 
         let tests = [(12, 100), (17, 13)];
         for test in tests {
-            let m1= BigInt::from_i32(test.0).unwrap();
+            let m1 = BigInt::from_i32(test.0).unwrap();
             let m2 = BigInt::from_i32(test.1).unwrap();
             let sum = &m1 + &m2;
-            
+
             let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
             let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
             let encrypted_sum = keypair.0.pk.add(&encrypted_m1, &encrypted_m2).unwrap();
@@ -305,10 +301,10 @@ mod tests {
         {
             let tests = [(100, 12), (17, 13)];
             for test in tests {
-                let m1= BigInt::from_i32(test.0).unwrap();
+                let m1 = BigInt::from_i32(test.0).unwrap();
                 let m2 = BigInt::from_i32(test.1).unwrap();
                 let sum = &m1 - &m2;
-                
+
                 let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
                 let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
                 let encrypted_sum = keypair.0.pk.sub(&encrypted_m1, &encrypted_m2).unwrap();
@@ -322,10 +318,10 @@ mod tests {
         {
             let tests = [(12, 100), (13, 17)];
             for test in tests {
-                let m1= BigInt::from_i32(test.0).unwrap();
+                let m1 = BigInt::from_i32(test.0).unwrap();
                 let m2 = BigInt::from_i32(test.1).unwrap();
                 let sum = &m1 - &m2;
-                
+
                 let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
                 let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
                 let encrypted_sum = keypair.0.pk.sub(&encrypted_m1, &encrypted_m2).unwrap();
@@ -342,14 +338,14 @@ mod tests {
 
         let tests = [(2, 2), (10, 13), (0, 0)];
         for test in tests {
-            let m1= BigInt::from_i32(test.0).unwrap();
+            let m1 = BigInt::from_i32(test.0).unwrap();
             let m2 = BigInt::from_i32(test.1).unwrap();
             let product = &m1 * &m2;
-            
+
             let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
             let encrypted_product = keypair.0.pk.mult_plain_text(&encrypted_m1, &m2).unwrap();
             let got = keypair.0.decrypt(&encrypted_product).unwrap();
-            
+
             assert_eq!(got, product);
         }
     }
@@ -360,14 +356,14 @@ mod tests {
 
         let tests = [(10, 2), (36, 12), (0, 1)];
         for test in tests {
-            let m1= BigInt::from_i32(test.0).unwrap();
+            let m1 = BigInt::from_i32(test.0).unwrap();
             let m2 = BigInt::from_i32(test.1).unwrap();
             let div_res = &m1 / &m2;
-            
+
             let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
             let encrypted_div_res = keypair.0.pk.div_plain_text(&encrypted_m1, &m2).unwrap();
             let got = keypair.0.decrypt(&encrypted_div_res).unwrap();
-            
+
             assert_eq!(got, div_res);
         }
     }
@@ -375,37 +371,56 @@ mod tests {
     #[test]
     fn test_homo_all() {
         let keypair = make_key_pair(1024).unwrap();
-        
+
         {
-            const F: i32 = ((7 - 5)*13 + 4) / 2;
+            const F: i32 = ((7 - 5) * 13 + 4) / 2;
             let target_res = BigInt::from_i32(F).unwrap();
-    
+
             let encrypted_7 = keypair.0.pk.encrypt(&BigInt::from_i32(7).unwrap()).unwrap();
             let encrypted_5 = keypair.0.pk.encrypt(&BigInt::from_i32(5).unwrap()).unwrap();
             let got_crypted_res = keypair.0.pk.sub(&encrypted_7, &encrypted_5).unwrap();
-            let got_crypted_res = keypair.0.pk.mult_plain_text(&got_crypted_res, &BigInt::from_i32(13).unwrap()).unwrap();
-            let got_crypted_res = keypair.0.pk.add_plain_text(&got_crypted_res, &BigInt::from_i32(4).unwrap()).unwrap();
-            let got_crypted_res = keypair.0.pk.div_plain_text(&got_crypted_res, &BigInt::from_i32(2).unwrap()).unwrap();
+            let got_crypted_res = keypair
+                .0
+                .pk
+                .mult_plain_text(&got_crypted_res, &BigInt::from_i32(13).unwrap())
+                .unwrap();
+            let got_crypted_res = keypair
+                .0
+                .pk
+                .add_plain_text(&got_crypted_res, &BigInt::from_i32(4).unwrap())
+                .unwrap();
+            let got_crypted_res = keypair
+                .0
+                .pk
+                .div_plain_text(&got_crypted_res, &BigInt::from_i32(2).unwrap())
+                .unwrap();
             let got = keypair.0.decrypt(&got_crypted_res).unwrap();
-            
+
             assert_eq!(got, target_res);
         }
 
         {
-            const F: i32 = ((7 - 5)*13 + 4) / 2;
+            const F: i32 = ((7 - 5) * 13 + 4) / 2;
             let target_res = BigInt::from_i32(F).unwrap();
-    
+
             let encrypted_7 = keypair.0.pk.encrypt(&BigInt::from_i32(7).unwrap()).unwrap();
             let encrypted_5 = keypair.0.pk.encrypt(&BigInt::from_i32(5).unwrap()).unwrap();
             let got_crypted_res = keypair.0.pk.sub(&encrypted_7, &encrypted_5).unwrap();
-            let got_crypted_res = keypair.0.pk.mult_plain_text(&got_crypted_res, &BigInt::from_i32(13).unwrap()).unwrap();
+            let got_crypted_res = keypair
+                .0
+                .pk
+                .mult_plain_text(&got_crypted_res, &BigInt::from_i32(13).unwrap())
+                .unwrap();
             let encrypted_4 = keypair.0.pk.encrypt(&BigInt::from_i32(4).unwrap()).unwrap();
             let got_crypted_res = keypair.0.pk.add(&got_crypted_res, &encrypted_4).unwrap();
-            let got_crypted_res = keypair.0.pk.div_plain_text(&got_crypted_res, &BigInt::from_i32(2).unwrap()).unwrap();
+            let got_crypted_res = keypair
+                .0
+                .pk
+                .div_plain_text(&got_crypted_res, &BigInt::from_i32(2).unwrap())
+                .unwrap();
             let got = keypair.0.decrypt(&got_crypted_res).unwrap();
-            
+
             assert_eq!(got, target_res);
         }
-       
     }
 }
