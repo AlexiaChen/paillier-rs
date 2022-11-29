@@ -13,9 +13,17 @@ cargo build
 cargo test
 ```
 
+## Why
+
+For research purpose. And the encryption of the Paillier algorithm supports the properties of homomorphic addition and scalar multiplication
+
+## Production Ready?
+
+No, Its only for educational & research purpose. The code has not undergone any security audit
+
 ## Usage
 
-Please see unit tests in [`lib.rs`](./src/lib.rs)  
+Please see unit tests in [`lib.rs`](./src/lib.rs)
 
 ## Paillier vs. RSA
 
