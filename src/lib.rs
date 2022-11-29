@@ -121,9 +121,20 @@ impl PubKey {
     pub fn add_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
         if is_cipher_valid(ciphertext, &self.nn) {
             let msg_int = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
+            self.add_plain_int(ciphertext, &msg_int)
+        } else {
+            None
+        }
+        
+    }
+
+    /// almost same as 
+    /// add_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt>
+    pub fn add_plain_int(&self, ciphertext: &BigInt, msg: &BigInt) -> Option<BigInt> {
+        if is_cipher_valid(ciphertext, &self.nn) {
             // ciphertext * g^m2 mod N^2
             // => ciphertext(E(m1)) * ciphertext2(E(m2)) mod N^2
-            let ciphertext2 = self.g.modpow(&msg_int, &self.nn);
+            let ciphertext2 = self.g.modpow(&msg, &self.nn);
             Some(ciphertext.mul(ciphertext2) % &self.nn)
         } else {
             None
@@ -162,6 +173,15 @@ impl PubKey {
             return None;
         }
         let k = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
+        self.mult_k(ciphertext, &k)
+    }
+
+    /// D(E(m)^k mod n^2) = k*m mod n
+    /// Dec(mult_k(E(m1), m2)) = m1 * m2 mod n.
+    pub fn mult_k(&self, ciphertext: &BigInt, k: &BigInt) -> Option<BigInt> {
+        if !is_cipher_valid(ciphertext, &self.nn) {
+            return None;
+        }
         Some(ciphertext.modpow(&k, &self.nn))
     }
 
@@ -173,9 +193,18 @@ impl PubKey {
             return None;
         }
         let k = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
-        let inverse_k = mod_inverse(&k, &self.nn).unwrap();
-        Some(ciphertext.modpow(&inverse_k, &self.nn))
+        self.div_k(ciphertext, &k)
     }
+
+    /// almost same as div_plain_text
+    pub fn div_k(&self, ciphertext: &BigInt, k: &BigInt) -> Option<BigInt> {
+        if !is_cipher_valid(ciphertext, &self.nn) {
+            return None;
+        }
+        let inverse_k = mod_inverse(&k, &self.nn).unwrap();
+        self.mult_k(ciphertext, &inverse_k)
+    }
+
 
 }
 
