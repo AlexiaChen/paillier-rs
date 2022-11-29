@@ -116,23 +116,13 @@ impl PrivKey {
 //////////////////////// Homomorphic properties ////////////////////////////////
 
 impl PubKey {
+   
     /// D(E(m1) * E(m2) mod n^2) = m1 + m2 mod n    this formula not efficient, cause operation E has more OP steps
     /// => D(E(m1) * g^m2 mod n^2) = m1 + m2 mod n     That is efficient, Simplified steps
     /// D(add_plain_text(E(m1), m2)) = m1 + m2 mod n
     /// returns added msg encrypted result
-    pub fn add_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
-        if is_cipher_valid(ciphertext, &self.nn) {
-            let msg_int = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
-            self.add_plain_int(ciphertext, &msg_int)
-        } else {
-            None
-        }
-        
-    }
-
-    /// almost same as 
     /// add_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt>
-    pub fn add_plain_int(&self, ciphertext: &BigInt, msg: &BigInt) -> Option<BigInt> {
+    pub fn add_plain_text(&self, ciphertext: &BigInt, msg: &BigInt) -> Option<BigInt> {
         if is_cipher_valid(ciphertext, &self.nn) {
             // ciphertext * g^m2 mod N^2
             // => ciphertext(E(m1)) * ciphertext2(E(m2)) mod N^2
@@ -170,41 +160,24 @@ impl PubKey {
     /// => D(E(m)^k mod n^2) = k*m mod n
     /// Dec(mult_plain_text(E(m1), m2)) = m1 * m2 mod n.
     /// returns result of multiplication of two ciphertexts
-    pub fn mult_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
-        if !is_cipher_valid(ciphertext, &self.nn) {
-            return None;
-        }
-        let k = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
-        self.mult_k(ciphertext, &k)
-    }
-
     /// D(E(m)^k mod n^2) = k*m mod n
     /// Dec(mult_k(E(m1), m2)) = m1 * m2 mod n.
-    pub fn mult_k(&self, ciphertext: &BigInt, k: &BigInt) -> Option<BigInt> {
+    pub fn mult_plain_text(&self, ciphertext: &BigInt, plain_k: &BigInt) -> Option<BigInt> {
         if !is_cipher_valid(ciphertext, &self.nn) {
             return None;
         }
-        Some(ciphertext.modpow(&k, &self.nn))
+        Some(ciphertext.modpow(&plain_k, &self.nn))
     }
 
     /// D(E(m)^-k mod n^2) = D(E(m)^(inverse k) mod n^2) = m / k mod n
     /// Dec(div_plain_text(E(m1), m2)) = m1 / m2 mod n.
     /// returns result division  of two ciphertext 
-    pub fn div_plain_text(&self, ciphertext: &BigInt, msg: &str) -> Option<BigInt> {
+    pub fn div_plain_text(&self, ciphertext: &BigInt, plain_k: &BigInt) -> Option<BigInt> {
         if !is_cipher_valid(ciphertext, &self.nn) {
             return None;
         }
-        let k = BigUint::from_bytes_be(msg.as_bytes()).to_bigint().unwrap();
-        self.div_k(ciphertext, &k)
-    }
-
-    /// almost same as div_plain_text
-    pub fn div_k(&self, ciphertext: &BigInt, k: &BigInt) -> Option<BigInt> {
-        if !is_cipher_valid(ciphertext, &self.nn) {
-            return None;
-        }
-        let inverse_k = mod_inverse(&k, &self.nn).unwrap();
-        self.mult_k(ciphertext, &inverse_k)
+        let inverse_k = mod_inverse(&plain_k, &self.nn).unwrap();
+        self.mult_plain_text(ciphertext, &inverse_k)
     }
 
 
@@ -299,7 +272,7 @@ mod tests {
             let sum = &m1 + &m2;
             
             let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
-            let encrypted_sum = keypair.0.pk.add_plain_int(&encrypted_m1, &m2).unwrap();
+            let encrypted_sum = keypair.0.pk.add_plain_text(&encrypted_m1, &m2).unwrap();
 
             let got = keypair.0.decrypt(&encrypted_sum).unwrap();
             assert_eq!(got, sum);
@@ -326,18 +299,77 @@ mod tests {
     }
 
     #[test]
-    fn test_homo_mult_plaintext() {
+    fn test_homo_sub() {
+        let keypair = make_key_pair(1024).unwrap();
 
+        {
+            let tests = [(100, 12), (17, 13)];
+            for test in tests {
+                let m1= BigInt::from_i32(test.0).unwrap();
+                let m2 = BigInt::from_i32(test.1).unwrap();
+                let sum = &m1 - &m2;
+                
+                let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+                let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
+                let encrypted_sum = keypair.0.pk.sub(&encrypted_m1, &encrypted_m2).unwrap();
+
+                let got = keypair.0.decrypt(&encrypted_sum).unwrap();
+                assert_eq!(got, sum);
+            }
+        }
+
+        // must m1 > m2
+        {
+            let tests = [(12, 100), (13, 17)];
+            for test in tests {
+                let m1= BigInt::from_i32(test.0).unwrap();
+                let m2 = BigInt::from_i32(test.1).unwrap();
+                let sum = &m1 - &m2;
+                
+                let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+                let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
+                let encrypted_sum = keypair.0.pk.sub(&encrypted_m1, &encrypted_m2).unwrap();
+
+                let got = keypair.0.decrypt(&encrypted_sum).unwrap();
+                assert_ne!(got, sum);
+            }
+        }
     }
 
     #[test]
-    fn test_homo_sub() {
+    fn test_homo_mult_plaintext() {
+        let keypair = make_key_pair(1024).unwrap();
 
+        let tests = [(2, 2), (10, 13), (0, 0)];
+        for test in tests {
+            let m1= BigInt::from_i32(test.0).unwrap();
+            let m2 = BigInt::from_i32(test.1).unwrap();
+            let product = &m1 * &m2;
+            
+            let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+            let encrypted_product = keypair.0.pk.mult_plain_text(&encrypted_m1, &m2).unwrap();
+            let got = keypair.0.decrypt(&encrypted_product).unwrap();
+            
+            assert_eq!(got, product);
+        }
     }
 
     #[test]
     fn test_homo_div_plaintext() {
+        let keypair = make_key_pair(1024).unwrap();
 
+        let tests = [(10, 2), (36, 12), (0, 1)];
+        for test in tests {
+            let m1= BigInt::from_i32(test.0).unwrap();
+            let m2 = BigInt::from_i32(test.1).unwrap();
+            let div_res = &m1 / &m2;
+            
+            let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+            let encrypted_div_res = keypair.0.pk.div_plain_text(&encrypted_m1, &m2).unwrap();
+            let got = keypair.0.decrypt(&encrypted_div_res).unwrap();
+            
+            assert_eq!(got, div_res);
+        }
     }
 
     #[test]
