@@ -374,6 +374,38 @@ mod tests {
 
     #[test]
     fn test_homo_all() {
+        let keypair = make_key_pair(1024).unwrap();
+        
+        {
+            const F: i32 = ((7 - 5)*13 + 4) / 2;
+            let target_res = BigInt::from_i32(F).unwrap();
+    
+            let encrypted_7 = keypair.0.pk.encrypt(&BigInt::from_i32(7).unwrap()).unwrap();
+            let encrypted_5 = keypair.0.pk.encrypt(&BigInt::from_i32(5).unwrap()).unwrap();
+            let got_crypted_res = keypair.0.pk.sub(&encrypted_7, &encrypted_5).unwrap();
+            let got_crypted_res = keypair.0.pk.mult_plain_text(&got_crypted_res, &BigInt::from_i32(13).unwrap()).unwrap();
+            let got_crypted_res = keypair.0.pk.add_plain_text(&got_crypted_res, &BigInt::from_i32(4).unwrap()).unwrap();
+            let got_crypted_res = keypair.0.pk.div_plain_text(&got_crypted_res, &BigInt::from_i32(2).unwrap()).unwrap();
+            let got = keypair.0.decrypt(&got_crypted_res).unwrap();
+            
+            assert_eq!(got, target_res);
+        }
 
+        {
+            const F: i32 = ((7 - 5)*13 + 4) / 2;
+            let target_res = BigInt::from_i32(F).unwrap();
+    
+            let encrypted_7 = keypair.0.pk.encrypt(&BigInt::from_i32(7).unwrap()).unwrap();
+            let encrypted_5 = keypair.0.pk.encrypt(&BigInt::from_i32(5).unwrap()).unwrap();
+            let got_crypted_res = keypair.0.pk.sub(&encrypted_7, &encrypted_5).unwrap();
+            let got_crypted_res = keypair.0.pk.mult_plain_text(&got_crypted_res, &BigInt::from_i32(13).unwrap()).unwrap();
+            let encrypted_4 = keypair.0.pk.encrypt(&BigInt::from_i32(4).unwrap()).unwrap();
+            let got_crypted_res = keypair.0.pk.add(&got_crypted_res, &encrypted_4).unwrap();
+            let got_crypted_res = keypair.0.pk.div_plain_text(&got_crypted_res, &BigInt::from_i32(2).unwrap()).unwrap();
+            let got = keypair.0.decrypt(&got_crypted_res).unwrap();
+            
+            assert_eq!(got, target_res);
+        }
+       
     }
 }
