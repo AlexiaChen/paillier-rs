@@ -72,6 +72,7 @@ impl PubKey {
     }
 
     /// ecrypt integer message to ciphertext
+    /// Encrypt: additive group A -> additive group B
     pub fn encrypt(&self, m: &BigInt) -> Option<BigInt> {
         // Let m be a message to be encrypted where 0 <= m < n
         if m >= &BigInt::zero() && m < &self.n {
@@ -98,6 +99,7 @@ impl PrivKey {
     }
 
     /// decrypt cipertext to integer message
+    /// additive group B -> additive group A
     pub fn decrypt(&self, ciphertext: &BigInt) -> Option<BigInt> {
         if is_cipher_valid(ciphertext, &self.pk.nn) {
             // Compute the plaintext message as m = L(c^lambda mod n^2) * mu mod n
@@ -283,5 +285,63 @@ mod tests {
             let cipher_text = keypair.0.pk.encrypt(&BigInt::from_i32(MSG).unwrap());
             assert_eq!(cipher_text.is_none(), true);
         }
+    }
+
+    #[test]
+    fn test_homo_add_plaintext() {
+        let keypair = make_key_pair(1024).unwrap();
+        // D(E(6) + E(9)) = 6 + 9
+        // D(E(50) + E(50)) = 6 + 9
+        let tests = [(6, 9), (50, 50)];
+        for test in tests {
+            let m1= BigInt::from_i32(test.0).unwrap();
+            let m2 = BigInt::from_i32(test.1).unwrap();
+            let sum = &m1 + &m2;
+            
+            let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+            let encrypted_sum = keypair.0.pk.add_plain_int(&encrypted_m1, &m2).unwrap();
+
+            let got = keypair.0.decrypt(&encrypted_sum).unwrap();
+            assert_eq!(got, sum);
+        }
+    }
+
+    #[test]
+    fn test_homo_add() {
+        let keypair = make_key_pair(1024).unwrap();
+
+        let tests = [(12, 100), (17, 13)];
+        for test in tests {
+            let m1= BigInt::from_i32(test.0).unwrap();
+            let m2 = BigInt::from_i32(test.1).unwrap();
+            let sum = &m1 + &m2;
+            
+            let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+            let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
+            let encrypted_sum = keypair.0.pk.add(&encrypted_m1, &encrypted_m2).unwrap();
+
+            let got = keypair.0.decrypt(&encrypted_sum).unwrap();
+            assert_eq!(got, sum);
+        }
+    }
+
+    #[test]
+    fn test_homo_mult_plaintext() {
+
+    }
+
+    #[test]
+    fn test_homo_sub() {
+
+    }
+
+    #[test]
+    fn test_homo_div_plaintext() {
+
+    }
+
+    #[test]
+    fn test_homo_all() {
+
     }
 }
