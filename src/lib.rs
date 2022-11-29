@@ -283,10 +283,19 @@ mod tests {
 
             let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
             let encrypted_m2 = keypair.0.pk.encrypt(&m2).unwrap();
+            // E(m1) + E(m2)
             let encrypted_sum = keypair.0.pk.add(&encrypted_m1, &encrypted_m2).unwrap();
+            // E(m1 + m2)
+            let encrypted_sum2 = keypair.0.pk.encrypt(&sum).unwrap();
 
+            // D(E(m1) + E(m2)) = m1 + m2
             let got = keypair.0.decrypt(&encrypted_sum).unwrap();
             assert_eq!(got, sum);
+
+            // E(m1) + E(m2) = E(m1 + m2), check equal must mapping result to original field. The target(encrpted field) field cannot use normal equal
+            // so its definitely an additive homomorphic cryptosystem
+            let got2 = keypair.0.decrypt(&encrypted_sum2).unwrap();
+            assert_eq!(got, got2);
         }
     }
 
