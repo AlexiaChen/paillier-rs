@@ -125,7 +125,7 @@ impl PubKey {
         if is_cipher_valid(ciphertext, &self.nn) {
             // ciphertext * g^m2 mod N^2
             // => ciphertext(E(m1)) * ciphertext2(E(m2)) mod N^2
-            let ciphertext2 = self.g.modpow(&msg, &self.nn);
+            let ciphertext2 = self.g.modpow(msg, &self.nn);
             Some(ciphertext.mul(ciphertext2) % &self.nn)
         } else {
             None
@@ -164,7 +164,7 @@ impl PubKey {
         if !is_cipher_valid(ciphertext, &self.nn) {
             return None;
         }
-        Some(ciphertext.modpow(&plain_k, &self.nn))
+        Some(ciphertext.modpow(plain_k, &self.nn))
     }
 
     /// D(E(m)^-k mod n^2) = D(E(m)^(inverse k) mod n^2) = m / k mod n
@@ -174,7 +174,7 @@ impl PubKey {
         if !is_cipher_valid(ciphertext, &self.nn) {
             return None;
         }
-        let inverse_k = mod_inverse(&plain_k, &self.nn).unwrap();
+        let inverse_k = mod_inverse(plain_k, &self.nn).unwrap();
         self.mult_plain_text(ciphertext, &inverse_k)
     }
 }
@@ -212,11 +212,7 @@ fn mod_inverse(a: &BigInt, modular: &BigInt) -> Option<BigInt> {
 
 // Let c be the ciphertext to decrypt, where c ∈ Z_(n^2)*    0 < c <= n^2 - 1
 fn is_cipher_valid(c: &BigInt, nn: &BigInt) -> bool {
-    if c > &BigInt::zero() && c <= &(nn - BigInt::one()) {
-        true
-    } else {
-        false
-    }
+    c > &BigInt::zero() && c <= &(nn - BigInt::one())
 }
 
 #[cfg(test)]
