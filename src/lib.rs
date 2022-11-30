@@ -341,17 +341,42 @@ mod tests {
     fn test_homo_mult_plaintext() {
         let keypair = make_key_pair(1024).unwrap();
 
-        let tests = [(2, 2), (10, 13), (0, 0)];
-        for test in tests {
-            let m1 = BigInt::from_i32(test.0).unwrap();
-            let m2 = BigInt::from_i32(test.1).unwrap();
-            let product = &m1 * &m2;
+        {
+            let tests = [(2, 2), (10, 13), (0, 0)];
+            for test in tests {
+                let m1 = BigInt::from_i32(test.0).unwrap();
+                let m2 = BigInt::from_i32(test.1).unwrap();
+                let product = &m1 * &m2;
 
-            let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
-            let encrypted_product = keypair.0.pk.mult_plain_text(&encrypted_m1, &m2).unwrap();
-            let got = keypair.0.decrypt(&encrypted_product).unwrap();
+                let encrypted_m1 = keypair.0.pk.encrypt(&m1).unwrap();
+                let encrypted_product = keypair.0.pk.mult_plain_text(&encrypted_m1, &m2).unwrap();
+                let got = keypair.0.decrypt(&encrypted_product).unwrap();
 
-            assert_eq!(got, product);
+                assert_eq!(got, product);
+            }
+        }
+
+        {
+            // E(2) + E(2) + E(2) + ... + E(2) = E(2) * k
+            const NUM: usize = 5;
+            let tests = [2; NUM];
+            let value = BigInt::from_i32(0).unwrap();
+            let mut encrypted = keypair.0.pk.encrypt(&value).unwrap();
+            for test in tests {
+                encrypted = keypair
+                    .0
+                    .pk
+                    .add_plain_text(&encrypted, &BigInt::from_i32(test).unwrap())
+                    .unwrap();
+            }
+
+            let encrypted_two = keypair.0.pk.encrypt(&BigInt::from_i32(2).unwrap()).unwrap();
+            let k = BigInt::from_usize(NUM).unwrap();
+            let encrypted_product = keypair.0.pk.mult_plain_text(&encrypted_two, &k).unwrap();
+            let got_sum = keypair.0.decrypt(&encrypted).unwrap();
+            let got_product = keypair.0.decrypt(&encrypted_product).unwrap();
+
+            assert_eq!(got_sum, got_product);
         }
     }
 
