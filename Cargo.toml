@@ -2,7 +2,7 @@
 name = "paillier-rs"
 authors = ["MathxH Chen <brainfvck@foxmail.com>"]
 description = "Paillier Cryptosystem Implementation"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 keywords = ["paillier-crypto", "homomorphic-encrypt", "asymmetric-algorithm", "public-key-crypto"]
 license = "MIT"
